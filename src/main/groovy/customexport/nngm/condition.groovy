@@ -4,7 +4,7 @@ import de.kairos.fhir.centraxx.metamodel.IcdEntry
 import javax.annotation.Nullable
 
 import static de.kairos.fhir.centraxx.metamodel.RootEntities.diagnosis
-import static de.kairos.fhir.centraxx.metamodel.RootEntities.tumor
+import static de.kairos.fhir.centraxx.metamodel.RootEntities.tnm
 
 /**
  * Profile: http://uk-koeln.de/fhir/StructureDefinition/Condition/nNGM/FirstDiagnosis
@@ -83,8 +83,8 @@ condition {
     }
 
     // Condition.stage -> UICC Staging (Sliced uicc7 / uicc8)
-    final String stadium = context.source[tumor().tnms().stadium()]
-    final String version = context.source[tumor().tnms().version()]
+    final String stadium = context.source[tnm().stadium()]
+    final String version = context.source[tnm().version()]
 
     if (stadium) {
         System.out.println("[nNGMProfileCondition-DEBUG]: Found Stage: " + stadium + " (Version: " + version + ")")
