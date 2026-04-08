@@ -1,162 +1,187 @@
 package customexport.nngm
 
-import de.kairos.centraxx.fhir.r4.utils.FhirUrls
-import de.kairos.fhir.centraxx.metamodel.ConsentPolicy
-import de.kairos.fhir.centraxx.metamodel.ConsentableAction
-import org.hl7.fhir.r4.model.Coding
-import org.hl7.fhir.r4.model.Consent
 
-import java.text.SimpleDateFormat
+import de.kairos.fhir.centraxx.metamodel.OrganisationUnit
+import org.hl7.fhir.r4.model.Consent
+import org.hl7.fhir.r4.model.DateTimeType
 
 import static de.kairos.fhir.centraxx.metamodel.RootEntities.consent
+
 /**
  * Represented by a CXX Consent
+ * Specified by https://simplifier.net/guide/nNGM-Form/Home/FHIR-Profile/Basisangaben/EinwilligungserklrungConsent.guide.md?version=current
  * @author Timo Schneider
- * @since CXX.v.2023.3.2
- * TODO untested, needs to find specific consents for nNGM https://simplifier.net/nngm-form/valueset-nngm-consentpolicy
+ * @since KAIROS-FHIR-DSL.v.1.8.0, CXX.v.3.18.1
  */
 
 consent {
 
-  id = "Consent/" + context.source[consent().id()]
+  final def consentCode = context.source[consent().consentType().code()]
+//  if (consentCode != "NNGM NAME") {
+//    return //no export
+//  }
 
-  meta {
+  id = "Consent/" + context.source[consent().id()]
+  meta{
     source = "urn:centraxx"
     profile "http://uk-koeln.de/fhir/StructureDefinition/nNGM/Consent"
   }
 
-  patient {
-    reference = "Patient/" + context.source[consent().patientContainer().id()]
-  }
 
-  final def validFrom = context.source[consent().validFrom().date()]
   final def validUntil = context.source[consent().validUntil().date()]
+  final def validFrom = context.source[consent().validFrom().date()]
 
-  provision {
-    period {
-      start = validFrom
-      end = validUntil
-    }
+  final String interpretedStatus = validUntilInterpreter(validUntil as String)
 
-    purpose {
-      system = FhirUrls.System.Consent.Type.BASE_URL
-      code = context.source[consent().consentType().code()] as String
-    }
-
-    // add consent parts
-    final def consentElements = context.source[consent().consentType().policies()]
-    for (final policy in consentElements) {
-      getProvision().add(new Consent.provisionComponent()
-          .addPurpose(new Coding()
-              .setSystem(FhirUrls.System.Consent.Action.BASE_URL)
-              .setCode(policy[ConsentPolicy.CONSENTABLE_ACTION][ConsentableAction.CODE] as String)))
-    }
-
-
-    // permit partly
-    final boolean isPartsOnly = context.source[consent().consentPartsOnly()]
-    final boolean isDeclined = context.source[consent().declined()]
-    if (isPartsOnly) {
-      for (final policy in context.source[consent().consentElements()]) {
-        getProvision().find {
-          it.getPurposeFirstRep().getCode() == policy[ConsentPolicy.CONSENTABLE_ACTION][ConsentableAction.CODE]
-        }?.setType(Consent.ConsentProvisionType.PERMIT)
-      }
-    } else if (isDeclined) {
-      provision.each { it.setType(Consent.ConsentProvisionType.PERMIT) }
-    }
-
-    // revocation
-    if (context.source[consent().revocation()]) {
-      final boolean isRevokePartsOnly = context.source[consent().revocation().revokePartsOnly()]
-      extension {
-        url = FhirUrls.Extension.Consent.REVOCATION
-        extension {
-          url = FhirUrls.Extension.Consent.Revocation.REVOCATION_PARTLY
-          valueBoolean = isRevokePartsOnly
-        }
-
-        if (context.source[consent().revocation().signedOn()]) {
-          extension {
-            url = FhirUrls.Extension.Consent.Revocation.REVOCATION_DATE
-            valueDateTime = context.source[consent().revocation().signedOn()]
-          }
-        }
-      }
-
-      //revoke partly
-      if (isRevokePartsOnly && isPartsOnly) {
-        final def revocationElements = context.source[consent().revocation().revocationElements()]
-        for (final def policy : revocationElements) {
-          getProvision().find {
-            it.getPurposeFirstRep().getCode() == policy[ConsentPolicy.CONSENTABLE_ACTION][ConsentableAction.CODE]
-          }?.setType(Consent.ConsentProvisionType.DENY)
-        }
-      } else {
-        provision.each { it.setType(Consent.ConsentProvisionType.DENY) }
-      }
-    }
-  }
-
-  final String interpretedStatus = getStatus(validUntil as String)
   status = interpretedStatus
 
-  final boolean hasFlexiStudy = context.source[consent().consentType().flexiStudy()] != null
   scope {
     coding {
       system = "http://terminology.hl7.org/CodeSystem/consentscope"
-      code = hasFlexiStudy ? "research" : "patient-privacy"
+      code = "research"
     }
   }
 
   category {
     coding {
       system = "http://loinc.org"
-      code = "59284-0" // Patient Consent
+      code = "59284-0"
     }
   }
 
-  dateTime {
-    date = context.source[consent().creationDate()]
+  patient{
+    reference = "Patient/" +context.source[consent().patientContainer().id()]
+  }
+
+  dateTime = context.source[consent().validFrom()] as DateTimeType
+
+
+  context.source[consent().patientContainer().organisationUnits()].each { final oe ->
+    organization {
+      reference = "Organisationseinheit/" + oe[OrganisationUnit.ID]
+      display = oe[OrganisationUnit.CODE]
+    }
+  }
+
+  sourceReference {
+    reference = "Patient/" + context.source[consent().id()]
   }
 
   policyRule {
     coding {
-      system = "http://terminology.hl7.org/CodeSystem/v3-ActCode"
-      code = "OPTINR" // opt-in with restrictions
+      system = "http://uk-koeln.de/fhir/CodeSystem/nNGM/nngm-consent-policy"
+      code = consentCode
     }
   }
 
-  if (context.source[consent().signedOn()]) {
-    verification {
-      verified = true
-      verificationDate {
-        date = context.source[consent().signedOn().date()]
+  //final def consentParts = []
+  //final def consentPartsOnly = context.source[consent().consentPartsOnly()]
+
+
+//  if (consentPartsOnly == false){
+//    consentParts.addAll(["1a"] )
+//  }
+//  else if (consentPartsOnly == true){
+//    consentParts.addAll(context.source[consent().consentElements().consentableAction().code()])
+//  }
+
+  // Define a multidimensional array to hold the code and display information
+  String[][] consentParts = [
+          ["1a", "Teil 1a: Molekularpathologische Diagnostik im nNGM"],
+          ["1b", "Teil 1b: Überregionale Beratung und Studiensuche im nNGM"],
+          ["2", "Teil 2: Forschung im nNGM"],
+          ["TE", "Teilnahmeerklärung"],
+          ["DS", "Datenschutzerklärung"],
+          ["MD", "Molekularpathologische Diagnostik im nNGM (Behandlungskontext)"],
+          ["ST", "Überregionale Beratung und Studiensuche im nNGM (Behandlungskontext)"],
+          ["WPI", "Weitergabe pseudonymisierter krankheitsbezogener Daten (MDAT) innerhalb des nNGM und an kooperierende Partner"],
+          ["WP", "Weitergabe von MDAT und Resttumorproben innerhalb des nNGM und an kooperierende Partner"],
+          ["WD", "Weitergabe pseudonymisierter krankheitsbezogener Daten (MDAT) in ein Drittland"],
+          ["WR", "Weitergabe von MDAT und Resttumorproben in ein Drittland"],
+          ["WPK", "Weitergabe pseudonymisierter krankheitsbezogener Daten (MDAT) zur kommerziellen Nutzung"],
+          ["WK", "Weitergabe von MDAT und Resttumorproben zur kommerziellen Nutzung"],
+          ["KW", "Kontaktaufnahme des nNGM-Zentrums zu einem späteren Zeitpunkt zur Gewinnung weiterer Informationen über den Behandlungsverlauf"],
+          ["KE", "Kontaktaufnahme des nNGM-Zentrums zum Zweck des Einschlusses in eine mögliche infrage kommende neue Studie"],
+          ["RD", "Rückmeldung wichtiger gesundheitsrelevanter Ergebnisse (Zufallsfunde)"]
+  ]
+
+
+  provision {
+    for (String[] part : consentParts) {
+      final codePart = part[0]
+      final displayPart = part[1]
+
+      consentParts.each { final cA ->
+        type = Consent.ConsentProvisionType.PERMIT
+        period {
+          start = validFrom
+          end = validUntil
+        }
+        code {
+          coding {
+            system = "http://loinc.org"
+            code = codePart
+            display = displayPart
+          }
+        }
       }
     }
   }
 
-  extension {
-    url = FhirUrls.Extension.Consent.NOTES
-    valueString = context.source[consent().notes()]
+}
+
+static String validUntilInterpreter(String validFromDate){
+  def fromDate = Date.parse("yyyy-MM-dd", validFromDate.substring(0,10))
+  if(!validFromDate){
+    return "active"
   }
-
-
-  if (context.source[consent().revocation()] && context.source[consent().revocation().notes()]) {
-    extension {
-      url = FhirUrls.Extension.Consent.Revocation.REVOCATION_NOTES
-      valueString = context.source[consent().revocation().notes()]
+  else{
+    def currDate = new Date()
+    final def res = currDate <=> (fromDate)
+    if (res == 0){
+      return "active"
+    }
+    else if (res == 1){
+      return "inactive"
     }
   }
 }
 
-static String getStatus(final String validFromDate) {
-  if (!validFromDate) {
-    return "active"
+static String mapConsent(final String cxxConsentPart){
+  switch(cxxConsentPart){
+    case ("IDAT_bereitstellen_EU_DSGVO_konform"):
+      return "IDAT_bereitstellen_EU_DSGVO_konform"
+    case ("IDAT_erheben"):
+      return "IDAT_erheben"
+    case ("IDAT_speichern_verarbeiten"):
+      return "IDAT_speichern_verarbeiten"
+    case ("IDAT_zusammenfuehren_Dritte"):
+      return "IDAT_zusammenfuehren_Dritte"
+    case ("MDAT_erheben"):
+      return "MDAT_erheben"
+    case ("MDAT_speichern_verarbeiten"):
+      return "MDAT_speichern_verarbeiten"
+    case ("MDAT_wissenschaftlich_nutzen_EU_DSGVO_konform"):
+      return "MDAT_wissenschaftlich_nutzen_EU_DSGVO_konform"
+    case ("MDAT_zusammenfuehren_Dritte"):
+      return "MDAT_zusammenfuehren_Dritte"
+    case ("Rekontaktierung_Verknuepfung_Datenbanken"):
+      return "Rekontaktierung_Verknuepfung_Datenbanken"
+    case ("Rekontaktierung_weitere_Erhebung"):
+      return "Rekontaktierung_weitere_Erhebung"
+    case ("Rekontaktierung_weitere_Studie"):
+      return "Rekontaktierung_weitere_Studie"
+    case ("MDAT_GECCO83_bereitstellen_NUM_CODEX"):
+      return "MDAT_GECCO83_bereitstellen_NUM_CODEX"
+    case ("MDAT_GECCO83_speichern_verarbeiten_NUM_CODEX"):
+      return "MDAT_GECCO83_speichern_verarbeiten_NUM_CODEX"
+    case ("MDAT_GECCO83_wissenschaftlich_nutzen_COVID_19_Forschung_EU_DSGVO_konform"):
+      return "MDAT_GECCO83_wissenschaftlich_nutzen_COVID_19_Forschung_EU_DSGVO_konform"
+    case ("MDAT_GECCO83_wissenschaftlich_nutzen_Pandemie_Forschung_EU_DSGVO_konform"):
+      return "MDAT_GECCO83_wissenschaftlich_nutzen_Pandemie_Forschung_EU_DSGVO_konform"
+    case ("Rekontaktierung_Zusatzbefund"):
+      return "Rekontaktierung_Zusatzbefund"
   }
-
-  final Date fromDate = new SimpleDateFormat("yyyy-MM-dd").parse(validFromDate.substring(0, 10))
-  final Date currDate = new Date()
-  final int res = currDate <=> (fromDate)
-  return res == 1 ? "inactive" : "active"
 }
+
+

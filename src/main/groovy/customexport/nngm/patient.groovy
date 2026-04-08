@@ -1,116 +1,102 @@
 package customexport.nngm
 
 import de.kairos.fhir.centraxx.metamodel.Country
-import de.kairos.fhir.centraxx.metamodel.IdContainer
 import de.kairos.fhir.centraxx.metamodel.MultilingualEntry
 import de.kairos.fhir.centraxx.metamodel.PatientAddress
-import de.kairos.fhir.centraxx.metamodel.PrecisionDate
 import de.kairos.fhir.centraxx.metamodel.enums.GenderType
 import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender
-import org.hl7.fhir.r4.model.HumanName
 
+import static de.kairos.fhir.centraxx.metamodel.PatientMaster.GENDER_TYPE
 import static de.kairos.fhir.centraxx.metamodel.RootEntities.patient
+import static de.kairos.fhir.centraxx.metamodel.RootEntities.patientMasterDataAnonymous
 
 /**
- * Represented by a CXX Patient for nNGM
- * Specified by https://simplifier.net/nngm-form/profilenngmpatientpatient
+ * Represented by a CXX PatientMasterDataAnonymous
+ * @author Timo Schneider
+ * @since CXX.v.2023.3.2
  */
 patient {
-    id = "Patient/" + context.source[patient().patientContainer().id()]
+
+    final String patId = context.source[patientMasterDataAnonymous().patientContainer().id()]
+    System.out.println("nNGM-Fhir-Patient - Processing Patient with ID: " + patId)
+
+    id = "Patient/" + patId
 
     meta {
         source = "urn:centraxx"
         profile "http://uk-koeln.de/fhir/StructureDefinition/Patient/nNGM/patient"
     }
 
-    // Identifiers
-    context.source[patient().patientContainer().idContainer()].each { final def idContainer ->
-        identifier {
-            system = "urn:centraxx"
-            value = idContainer[IdContainer.PSN]
-        }
+    identifier {
+        system = "urn:centraxx"
+        value = patId
     }
 
-    // Name (Official)
+    final String familyName = context.source[patient().lastName()]
+    final String givenName = context.source[patient().firstName()]
+    System.out.println("nNGM-Fhir-Patient - Mapping Name: ${givenName} ${familyName}")
+
     humanName {
-        use = HumanName.NameUse.OFFICIAL
-        family = context.source[patient().lastName()]
-        given(context.source[patient().firstName()] as String)
-
-        final def title = context.source[patient().title().multilinguals()]?.find { it[MultilingualEntry.LANG] == "de" }
-        if (title) {
-            prefix(title.getAt(MultilingualEntry.VALUE) as String)
-            _prefix {
-                extension {
-                    url = "http://hl7.org/fhir/StructureDefinition/iso21090-EN-qualifier"
-                    valueCode = "AC"
-                }
-            }
-        }
+        use = "official"
+        family = familyName
+        given givenName as String
+        prefix context.source[patient().title().multilinguals()]?.find { final def me ->
+            me[MultilingualEntry.LANG] == "de"
+        }?.getAt(MultilingualEntry.VALUE) as String
     }
 
-    // Geburtsname (Maiden)
     if (context.source[patient().birthName()]) {
         humanName {
-            use = HumanName.NameUse.MAIDEN
+            use = "maiden"
             family = context.source[patient().birthName()]
+            given givenName as String
         }
     }
 
-    if (context.source[patient().birthdate()] && context.source[patient().birthdate().date()]) {
-        birthDate = context.source[patient().birthdate().date()]
+    birthDate = normalizeDate(context.source[patientMasterDataAnonymous().birthdate().date()] as String)
+
+    deceasedDateTime = "UNKNOWN" != context.source[patientMasterDataAnonymous().dateOfDeath().precision()] ?
+            context.source[patientMasterDataAnonymous().dateOfDeath().date()] : null
+
+    if (context.source[GENDER_TYPE]) {
+        final GenderType gt = context.source[GENDER_TYPE] as GenderType
+        System.out.println("nNGM-Fhir-Patient - Mapping Gender: " + gt)
+        gender = mapGender(gt)
     }
 
-    final def dateOfDeath = context.source[patient().dateOfDeath()]
-    if (dateOfDeath && "UNKNOWN" != context.source[patient().dateOfDeath().precision()]) {
-        deceasedBoolean = true
-        deceasedDateTime = dateOfDeath[PrecisionDate.DATE]
-    } else {
-        deceasedBoolean = false
-    }
-
-    // Gender with nNGM constraint pat-nngm-1
-    final GenderType genderType = context.source[patient().genderType()] as GenderType
-    gender {
-        if (genderType == GenderType.MALE) {
-            value = AdministrativeGender.MALE
-        } else if (genderType == GenderType.FEMALE) {
-            value = AdministrativeGender.FEMALE
-        } else if (genderType == GenderType.UNKNOWN) {
-            value = AdministrativeGender.UNKNOWN
-        } else {
-            value = AdministrativeGender.OTHER
-            extension {
-                url = "http://fhir.de/StructureDefinition/gender-amtlich-de"
-                valueCode = (genderType == GenderType.X) ? "D" : "X"
-            }
-        }
-    }
-
-    // Address
     context.source[patient().addresses()]?.each { final ad ->
-        if (ad[PatientAddress.STREET]) {
-            address {
-                type = "both"
-                city = ad[PatientAddress.CITY] as String
-                postalCode = ad[PatientAddress.ZIPCODE] as String
-                country = ad[PatientAddress.COUNTRY]?.getAt(Country.ISO2_CODE) as String
-                line(getLineString(ad as Map))
-            }
-        } else if (ad[PatientAddress.PO_BOX]) {
-            address {
-                type = "postal"
-                city = ad[PatientAddress.CITY] as String
-                postalCode = ad[PatientAddress.ZIPCODE] as String
-                country = ad[PatientAddress.COUNTRY]?.getAt(Country.ISO2_CODE) as String
-                line(ad[PatientAddress.PO_BOX] as String)
+        address {
+            type = "physical"
+            city = ad[PatientAddress.CITY]
+            postalCode = ad[PatientAddress.ZIPCODE]
+            country = ad[PatientAddress.COUNTRY]?.getAt(Country.ISO2_CODE)
+            final def lineString = getLineString(ad as Map)
+            if (lineString) {
+                line lineString
             }
         }
     }
 }
 
+static AdministrativeGender mapGender(final GenderType genderType) {
+    switch (genderType) {
+        case GenderType.MALE:
+            return AdministrativeGender.MALE
+        case GenderType.FEMALE:
+            return AdministrativeGender.FEMALE
+        case GenderType.UNKNOWN:
+            return AdministrativeGender.UNKNOWN
+        default:
+            return AdministrativeGender.OTHER
+    }
+}
+
+static String normalizeDate(final String dateTimeString) {
+    return dateTimeString != null ? dateTimeString.substring(0, 10) : null // removes the time
+}
+
 static String getLineString(final Map address) {
     final def keys = [PatientAddress.STREET, PatientAddress.STREETNO]
-    final def addressParts = keys.collect { return address[it] }.findAll { it != null }
-    return addressParts ? addressParts.join(" ") : null
+    final def addressParts = keys.collect { return address[it] }.findAll()
+    return addressParts.findAll() ? addressParts.join(" ") : null
 }

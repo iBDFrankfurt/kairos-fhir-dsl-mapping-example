@@ -2,29 +2,334 @@
   "description": "This configuration links a CentraXX entity (selectFromCxxEntity) to a FHIR resource (exportToFhirResource) by conversion through a transformation template (transformByTemplate). Only the template can be changed. The same entity can be configured to the same FHIR resource by multiple templates. The configuration can be changed during runtime without CentraXX restart. The mapping order is important, if the target system checks referential integrity (e.g. blaze store).",
   "mappings": [
     {
+      "selectFromCxxEntity": "ORGANIZATION_UNIT",
+      "transformByTemplate": "organization",
+      "exportToFhirResource": "Organization",
+      "exportDeleteEnable": false
+    },
+    {
       "selectFromCxxEntity": "PATIENT_MASTER",
       "transformByTemplate": "patient",
-      "exportToFhirResource": "Patient"
+      "exportToFhirResource": "Patient",
+      "exportDeleteEnable": false
     },
     {
-      "selectFromCxxEntity": "CONSENT",
-      "transformByTemplate": "consent",
-      "exportToFhirResource": "Consent"
+      "selectFromCxxEntity": "PATIENT_MASTER",
+      "transformByTemplate": "observationPatient",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
     },
     {
-      "selectFromCxxEntity": "CONSENT",
-      "transformByTemplate": "consentV4",
-      "exportToFhirResource": "Consent"
+      "selectFromCxxEntity": "EPISODE",
+      "transformByTemplate": "encounter",
+      "exportToFhirResource": "Encounter",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "SAMPLE",
+      "transformByTemplate": "specimen",
+      "exportToFhirResource": "Specimen",
+      "exportDeleteEnable": false
     },
     {
       "selectFromCxxEntity": "DIAGNOSIS",
       "transformByTemplate": "condition",
-      "exportToFhirResource": "Condition"
+      "exportToFhirResource": "Condition",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "DIAGNOSIS",
+      "transformByTemplate": "observationDiagnosis",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "observationLaborMapping",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "diagnosticReportLaborMapping",
+      "exportToFhirResource": "DiagnosticReport",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "deviceLaborMapping",
+      "exportToFhirResource": "Device",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "allergyIntoleranceLaborMapping",
+      "exportToFhirResource": "AllergyIntolerance",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "immunizationLaborMapping",
+      "exportToFhirResource": "Immunization",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "carePlanLaborMapping",
+      "exportToFhirResource": "CarePlan",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "careTeamLaborMapping",
+      "exportToFhirResource": "CareTeam",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "goalLaborMapping",
+      "exportToFhirResource": "Goal",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "provenanceLaborMapping",
+      "exportToFhirResource": "Provenance",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "procedureLaborMapping",
+      "exportToFhirResource": "Procedure",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "conditionLaborMapping",
+      "exportToFhirResource": "Condition",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_MAPPING",
+      "transformByTemplate": "medicationStatementLaborMapping",
+      "exportToFhirResource": "MedicationStatement",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "RADIATION_THERAPY",
+      "transformByTemplate": "procedureRadiationTherapy",
+      "exportToFhirResource": "Procedure",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "SYSTEM_THERAPY",
+      "transformByTemplate": "medicationStatementSystemTherapy",
+      "exportToFhirResource": "MedicationStatement",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "SURGERY_THERAPY",
+      "transformByTemplate": "procedureSurgeryTherapy",
+      "exportToFhirResource": "Procedure",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "TNM",
+      "transformByTemplate": "observationTnm",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "ANN_ARBOR",
+      "transformByTemplate": "observationAnnArbor",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "OTHER_CLASSIFICATION",
+      "transformByTemplate": "observationOtherClassification",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "METASTASIS",
+      "transformByTemplate": "observationMetastasis",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "SURGERY_THERAPY",
+      "transformByTemplate": "observationSurgery",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "HISTOLOGY",
+      "transformByTemplate": "observationHistology",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "PROGRESS",
+      "transformByTemplate": "observationProgress",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "PROGRESS",
+      "transformByTemplate": "clinicalImpressionProgress",
+      "exportToFhirResource": "ClinicalImpression",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "MED_PROCEDURE",
+      "transformByTemplate": "procedureMedProcedure",
+      "exportToFhirResource": "Procedure",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "observationStudyVisitItem",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "medicationStatementStudyVisitItem",
+      "exportToFhirResource": "MedicationStatement",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "procedureStudyVisitItem",
+      "exportToFhirResource": "Procedure",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "conditionStudyVisitItem",
+      "exportToFhirResource": "Condition",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "immunizationStudyVisitItem",
+      "exportToFhirResource": "Immunization",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "diagnosticReportStudyVisitItem",
+      "exportToFhirResource": "DiagnosticReport",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "consentStudyVisitItem",
+      "exportToFhirResource": "Consent",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "patientStudyVisitItem",
+      "exportToFhirResource": "Patient",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "deviceStudyVisitItem",
+      "exportToFhirResource": "Device",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "allergyIntoleranceStudyVisitItem",
+      "exportToFhirResource": "AllergyIntolerance",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "carePlanStudyVisitItem",
+      "exportToFhirResource": "CarePlan",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "careTeamStudyVisitItem",
+      "exportToFhirResource": "CareTeam",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "goalStudyVisitItem",
+      "exportToFhirResource": "Goal",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_VISIT_ITEM",
+      "transformByTemplate": "provenanceStudyVisitItem",
+      "exportToFhirResource": "Provenance",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "CONSENT",
+      "transformByTemplate": "consent",
+      "exportToFhirResource": "Consent",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "MEDICATION",
+      "transformByTemplate": "medicationMedi",
+      "exportToFhirResource": "Medication",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "MEDICATION",
+      "transformByTemplate": "medicationStatementMedi",
+      "exportToFhirResource": "MedicationStatement",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "MEDICATION",
+      "transformByTemplate": "medicationRequestMedi",
+      "exportToFhirResource": "MedicationRequest",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "LABOR_FINDING_LABOR_VALUE",
+      "transformByTemplate": "observationLabFindingLabVal",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "STUDY_MEMBER",
+      "transformByTemplate": "researchSubjectStudyMember",
+      "exportToFhirResource": "ResearchSubject",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "CRF_ITEM",
+      "transformByTemplate": "observationCrfItem",
+      "exportToFhirResource": "Observation",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "DOCUMENT_MAPPING",
+      "transformByTemplate": "docReferenceDocMapping",
+      "exportToFhirResource": "DocumentReference",
+      "exportDeleteEnable": false
     },
     {
       "selectFromCxxEntity": "ATTENDING_DOCTOR",
-      "transformByTemplate": "practitioner",
-      "exportToFhirResource": "Practitioner"
+      "transformByTemplate": "practitionerAttendingDoc",
+      "exportToFhirResource": "Practitioner",
+      "exportDeleteEnable": false
+    },
+    {
+      "selectFromCxxEntity": "FLEXI_FLAG_ITEM",
+      "transformByTemplate": "flag",
+      "exportToFhirResource": "Flag",
+      "exportDeleteEnable": false
     }
   ]
 }
